@@ -69,6 +69,83 @@ app.post('/api/mahasiswa', async (req, res) => {
   }
 });
 
+app.put('/api/mahasiswa/:nim', async (req, res) => {
+  const { nim } = req.params;
+  const {
+    nama,
+    email,
+    tahun_masuk,
+    status,
+    kode_prodi
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE mahasiswa
+       SET nama = $1,
+           email = $2,
+           tahun_masuk = $3,
+           status = $4,
+           kode_prodi = $5
+       WHERE nim = $6
+       RETURNING *`,
+      [
+        nama,
+        email || null,
+        tahun_masuk,
+        status,
+        kode_prodi,
+        nim
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        error: 'Mahasiswa tidak ditemukan'
+      });
+    }
+
+    res.json({
+      message: 'Mahasiswa berhasil diperbarui',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      error: 'Gagal memperbarui mahasiswa. Periksa data dan constraint.'
+    });
+  }
+});
+
+app.delete('/api/mahasiswa/:nim', async (req, res) => {
+  const { nim } = req.params;
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM mahasiswa
+       WHERE nim = $1
+       RETURNING nim, nama`,
+      [nim]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        error: 'Mahasiswa tidak ditemukan'
+      });
+    }
+
+    res.json({
+      message: 'Mahasiswa berhasil dihapus',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      error: 'Gagal menghapus mahasiswa. Periksa relasi data.'
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server berjalan di http://localhost:${PORT}`);
 });
